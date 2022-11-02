@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Jobs\ProductLiked;
 use App\Models\ProductUser;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 
 class ProductController extends Controller
