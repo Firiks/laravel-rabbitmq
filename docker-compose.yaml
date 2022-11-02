@@ -1,0 +1,108 @@
+version: '3.8'
+services:
+  admin_web:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    command: 'php artisan serve --host=0.0.0.0 --port=8000'
+    container_name: admin-web-microservice
+    volumes:
+      - ./admin:/app
+    ports:
+      - 8000:8000
+    depends_on:
+      - admin_db
+      - rabbitmq
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
+    networks:
+      - microservices-network
+
+  admin_db:
+    image: mysql:8.0.31
+    container_name: admin-db-microservice
+    environment:
+      MYSQL_DATABASE: admin
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./mysql_admin:/var/lib/mysql
+    ports:
+      - 3307:3306
+    networks:
+      - microservices-network
+
+  # admin_queue:
+  #   container_name: admin-queue-microservice
+  #   build:
+  #     context: ./admin
+  #     dockerfile: Dockerfile
+  #   command: 'php artisan queue:work --queue=admin_queue'
+  #   depends_on:
+  #     - admin_web
+  #     - rabbitmq
+  #   networks:
+  #     - microservices-network
+
+  main_web:
+    build:
+      context: ./main
+      dockerfile: Dockerfile
+    command: 'php artisan serve --host=0.0.0.0 --port=8001'
+    container_name: main-web-microservice
+    volumes:
+      - ./main:/app_main
+    ports:
+      - 8001:8001
+    depends_on:
+      - main_db
+      - rabbitmq
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
+    networks:
+      - microservices-network
+
+  main_db:
+    image: mysql:8.0.31
+    container_name: main-db-microservice
+    environment:
+      MYSQL_DATABASE: main
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./mysql_main:/var/lib/mysql
+    ports:
+      - 3308:3306
+    networks:
+      - microservices-network
+
+  # main_queue:
+  #   container_name: main-queue-microservice
+  #   build:
+  #     context: ./main
+  #     dockerfile: Dockerfile
+  #   command: 'php artisan queue:work --queue=main_queue'
+  #   depends_on:
+  #     - main_web
+  #     - rabbitmq
+  #   networks:
+  #     - microservices-network
+  
+  rabbitmq:
+    image: rabbitmq:3.9.24-management-alpine
+    container_name: 'rabbitmq'
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+        - ./rabbitmq/data/:/var/lib/rabbitmq
+        - ./rabbitmq/log/:/var/log/rabbitmq
+        - ./conf/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+        - ./conf/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    ports:
+        - 5672:5672
+        - 15672:15672
+    networks:
+        - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
